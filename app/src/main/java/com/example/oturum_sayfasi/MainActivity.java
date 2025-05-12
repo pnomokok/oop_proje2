@@ -18,6 +18,7 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import spes.example.oop_proje.SecondActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -96,6 +97,13 @@ public class MainActivity extends AppCompatActivity {
                     if (user.getPassword().equals(password)) {
                         Toast.makeText(MainActivity.this, "Giriş başarılı!", Toast.LENGTH_SHORT).show();
                         // Şimdilik sadece mesaj gösteriyoruz, yönlendirme yok
+
+
+                        // SecondActivity'e geçiş ve id aktarımı
+                        //Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+                        //intent.putExtra("user_id", user.getId());  // Supabase ID
+                        //startActivity(intent);
+                        //finish();
                     } else {
                         Toast.makeText(MainActivity.this, "Şifre yanlış!", Toast.LENGTH_SHORT).show();
                     }

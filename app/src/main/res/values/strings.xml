@@ -1,3 +1,20 @@
 <resources>
-    <string name="app_name">Oturum_sayfasi</string>
+    <string name="app_name">oop_proje</string>
+    <string-array name="gender_options">
+        <item>Erkek</item>
+        <item>Kadın</item>
+        <item>Diğer</item>
+    </string-array>
+
+    <string-array name="blood_type_options">
+        <item>Kan Grubu Seçin</item>
+        <item>0 Rh+</item>
+        <item>0 Rh-</item>
+        <item>A Rh+</item>
+        <item>A Rh-</item>
+        <item>B Rh+</item>
+        <item>B Rh-</item>
+        <item>AB Rh+</item>
+        <item>AB Rh-</item>
+    </string-array>
 </resources>
