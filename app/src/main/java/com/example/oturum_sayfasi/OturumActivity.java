@@ -141,6 +141,6 @@ public class OturumActivity extends AppCompatActivity {
                 Toast.makeText(OturumActivity.this, "Hata: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
-
+      //
     }
 }

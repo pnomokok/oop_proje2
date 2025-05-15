@@ -81,5 +81,4 @@
         android:textSize="22dp"
         android:text="KAYDET" />
     <!---->
-
 </LinearLayout>

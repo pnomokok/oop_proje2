@@ -164,6 +164,4 @@ public class UpdateInfoActivity extends AppCompatActivity {
 
         Volley.newRequestQueue(this).add(request);
     }
-
-
-}
+  }

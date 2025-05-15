@@ -44,6 +44,7 @@ public interface SupabaseService {
     })
     @GET("oturum")
     Call<List<UserModel>> getUserById(@Query("id") String id);
+    //
 
 }
 

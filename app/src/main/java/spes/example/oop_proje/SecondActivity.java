@@ -153,6 +153,6 @@ public class SecondActivity extends AppCompatActivity {
                 Toast.makeText(SecondActivity.this, "Sunucu hatası: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-    }
+    }//
 }
 
