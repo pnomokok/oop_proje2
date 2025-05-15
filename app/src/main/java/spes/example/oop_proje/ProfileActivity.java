@@ -1,18 +1,42 @@
 package spes.example.oop_proje;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.Request;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.example.oturum_sayfasi.ApiClient;
 import com.example.oturum_sayfasi.R;
+import com.example.oturum_sayfasi.SupabaseService;
+import com.example.oturum_sayfasi.UserModel;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 // biktim
 public class ProfileActivity extends AppCompatActivity {
     private TextView textViewName,textViewSurname,textViewBirthDay,textViewBirthMonth,textViewBirthYear,textViewGender;
     private Button updateInfoButton;
+    private final int UPDATE_REQUEST_CODE = 1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,39 +54,76 @@ public class ProfileActivity extends AppCompatActivity {
         // Güncelleme butonunu bağla
         updateInfoButton = findViewById(R.id.buttonUpdateInfo);
 
-        // SecondActivity'den gelen verileri al
-        String username = getIntent().getStringExtra("username");
-        String name = getIntent().getStringExtra("name");
-        String surname = getIntent().getStringExtra("surname");
-        int day = getIntent().getIntExtra("birthday", 0);
-        int month = getIntent().getIntExtra("birthmonth", 0);
-        int year = getIntent().getIntExtra("birthyear", 0);
-        String gender = getIntent().getStringExtra("gender");
+        //displayUserInfoFromIntent(getIntent());
 
-        // Verileri ekranda göster
-        textViewName.setText(name);
-        textViewSurname.setText(surname);
-        textViewBirthDay.setText(String.valueOf(day));
-        textViewBirthMonth.setText(String.valueOf(month));
-        textViewBirthYear.setText(String.valueOf(year));
-        textViewGender.setText(gender);
+        String userId = getIntent().getStringExtra("id");
+        if (userId != null) {
+            fetchUserFromSupabase(userId);
+        } else {
+            Toast.makeText(this, "Kullanıcı ID alınamadı!", Toast.LENGTH_SHORT).show();
+        }
 
-        // Bilgileri güncelleme butonuna tıklama işlemi
+
+
         updateInfoButton.setOnClickListener(v -> {
-            // UpdateInfoActivity sayfasına geçiş
             Intent intent = new Intent(ProfileActivity.this, UpdateInfoActivity.class);
+            intent.putExtra("id", userId); // UUID olan kullanıcı id'si
+            // Mevcut verileri intent ile geç
+            intent.putExtra("username", getIntent().getStringExtra("username"));
+            intent.putExtra("name", textViewName.getText().toString());
+            intent.putExtra("surname", textViewSurname.getText().toString());
+            intent.putExtra("birthday", Integer.parseInt(textViewBirthDay.getText().toString()));
+            intent.putExtra("birthmonth", Integer.parseInt(textViewBirthMonth.getText().toString()));
+            intent.putExtra("birthyear", Integer.parseInt(textViewBirthYear.getText().toString()));
+            intent.putExtra("gender", textViewGender.getText().toString());
 
-            // Mevcut bilgileri intent ile geç
-            intent.putExtra("username",username);
-            intent.putExtra("name", name);
-            intent.putExtra("surname", surname);
-            intent.putExtra("birthday", day);
-            intent.putExtra("birthmonth", month);
-            intent.putExtra("birthyear", year);
-            intent.putExtra("gender", gender);
-
-            startActivity(intent);
+            startActivityForResult(intent, UPDATE_REQUEST_CODE);
         });
     }
+    private void displayUserInfoFromIntent(Intent intent) {
+        textViewName.setText(intent.getStringExtra("name"));
+        textViewSurname.setText(intent.getStringExtra("surname"));
+        textViewBirthDay.setText(String.valueOf(intent.getIntExtra("birthday", 0)));
+        textViewBirthMonth.setText(String.valueOf(intent.getIntExtra("birthmonth", 0)));
+        textViewBirthYear.setText(String.valueOf(intent.getIntExtra("birthyear", 0)));
+        textViewGender.setText(intent.getStringExtra("gender"));
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == UPDATE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            // Güncellenen verileri al ve göster
+            displayUserInfoFromIntent(data);
+        }
+    }
+    private void fetchUserFromSupabase(String userId) {
+        SupabaseService service = ApiClient.getClient().create(SupabaseService.class);
+        Call<List<UserModel>> call = service.getUserById("eq." + userId);
+
+        call.enqueue(new Callback<List<UserModel>>() {
+            @Override
+            public void onResponse(Call<List<UserModel>> call, Response<List<UserModel>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    UserModel user = response.body().get(0);
+
+                    textViewName.setText(user.getName());
+                    textViewSurname.setText(user.getSurname());
+                    textViewBirthDay.setText(String.valueOf(user.getBirthday()));
+                    textViewBirthMonth.setText(String.valueOf(user.getBirthmonth()));
+                    textViewBirthYear.setText(String.valueOf(user.getBirthyear()));
+                    textViewGender.setText(user.getGender());
+                } else {
+                    Toast.makeText(ProfileActivity.this, "Kullanıcı bilgileri alınamadı!", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<UserModel>> call, Throwable t) {
+                Toast.makeText(ProfileActivity.this, "Sunucu hatası: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 }
 

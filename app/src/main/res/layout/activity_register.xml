@@ -18,6 +18,8 @@
             android:layout_height="wrap_content"
             android:hint="Telefon Numarası"
             android:inputType="phone"
+            android:maxLength="17"
+            android:text="+90"
             android:padding="16dp"
             android:minHeight="48dp"
             android:background="@android:drawable/edit_text"

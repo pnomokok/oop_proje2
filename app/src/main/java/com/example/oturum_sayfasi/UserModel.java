@@ -98,5 +98,6 @@ public class UserModel {
     public void setBirthyear(int birthyear) {
         this.birthyear = birthyear;
     }
+    //
 }
 

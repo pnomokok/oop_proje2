@@ -2,6 +2,7 @@
 package spes.example.oop_proje;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -19,7 +20,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.oturum_sayfasi.ApiClient;
 import com.example.oturum_sayfasi.R;
+import com.example.oturum_sayfasi.SupabaseService;
+import com.example.oturum_sayfasi.UserModel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,10 +33,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class SecondActivity extends AppCompatActivity {
 
     private EditText editTextName, editTextSurname, editTextDay, editTextMonth, editTextYear;
     private Spinner genderSpinner;
+    private String userId; // UUID
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +54,8 @@ public class SecondActivity extends AppCompatActivity {
         editTextMonth = findViewById(R.id.editTextMonth);
         editTextYear = findViewById(R.id.editTextYear);
         genderSpinner = findViewById(R.id.spinnerGender);
+
+        userId = getIntent().getStringExtra("id");
 
         //KVKK metnini göster
         TextView textViewShowKvkk = findViewById(R.id.textViewShowKvkk);
@@ -74,6 +85,8 @@ public class SecondActivity extends AppCompatActivity {
         });
     }
     private void saveUserToSupabase() {
+        Log.d("SecondActivity", "saveUserToSupabase başladı");
+
         String name = editTextName.getText().toString().trim();
         String surname = editTextSurname.getText().toString().trim();
         String gender = genderSpinner.getSelectedItem().toString();
@@ -81,81 +94,65 @@ public class SecondActivity extends AppCompatActivity {
         int month = Integer.parseInt(editTextMonth.getText().toString().trim());
         int year = Integer.parseInt(editTextYear.getText().toString().trim());
 
+        Log.d("SecondActivity", "EditText değerleri alındı");
+
+
+
         CheckBox checkKvkk = findViewById(R.id.checkKvkk);
         if (!checkKvkk.isChecked()) {
             Toast.makeText(this, "KVKK onayını kabul etmeniz gerekmektedir!", Toast.LENGTH_SHORT).show();
+            Log.e("SecondActivity", "KVKK işareti eksik");
             return;
         }
 
-        String username = "905555000000"; // Şimdilik manuel olarak sabit
+        Log.d("SecondActivity", "Veriler kontrol edildi, JSON hazırlanıyor");
 
-        JSONObject jsonBody = new JSONObject();
-        try {
-            jsonBody.put("name", name);
-            jsonBody.put("surname", surname);
-            jsonBody.put("gender", gender);
-            jsonBody.put("birthday", day);
-            jsonBody.put("birthmonth", month);
-            jsonBody.put("birthyear", year);
-        } catch (JSONException e) {
-            Log.e("JSONError", "JSONException occurred: " + e.getMessage());
-            e.printStackTrace();
-        }
+        //String username = "905555000000"; // Şimdilik manuel olarak sabit
 
-        String url = "https://imguaxpadnlpwxsneuwc.supabase.co/rest/v1/zsk_deneme?username=eq." + username;
+        UserModel updatedUser = new UserModel();
+        updatedUser.setName(name);
+        updatedUser.setSurname(surname);
+        updatedUser.setGender(gender);
+        updatedUser.setBirthday(day);
+        updatedUser.setBirthmonth(month);
+        updatedUser.setBirthyear(year);
 
-        StringRequest request = new StringRequest(Request.Method.PATCH, url,
-                response -> {
-                    try {
-                        JSONArray jsonArray = new JSONArray(response);
-                        if (jsonArray.length() > 0) {
-                            JSONObject user = jsonArray.getJSONObject(0);
+        SupabaseService service = ApiClient.getClient().create(SupabaseService.class);
+        Call<Void> call = service.updateUserById("eq." + userId, updatedUser);
 
-                            Toast.makeText(this, "Kayıt başarılı!", Toast.LENGTH_SHORT).show();
 
-                            Intent intent = new Intent(SecondActivity.this, ProfileActivity.class);
-                            intent.putExtra("username", user.getString("username"));
-                            intent.putExtra("name", user.getString("name"));
-                            intent.putExtra("surname", user.getString("surname"));
-                            intent.putExtra("gender", user.getString("gender"));
-                            intent.putExtra("birthday", user.getInt("birthday"));
-                            intent.putExtra("birthmonth", user.getInt("birthmonth"));
-                            intent.putExtra("birthyear", user.getInt("birthyear"));
-                            startActivity(intent);
-                            finish();
-                        } else {
-                            Toast.makeText(this, "Sunucudan boş yanıt alındı.", Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (JSONException e) {
-                        Log.e("ParseError", "JSON parse hatası: " + e.getMessage());
-                    }
-                },
-                error -> {
-                    Log.e("VolleyError", "Hata: " + error.toString());
-                    Toast.makeText(this, "Bir hata oluştu.", Toast.LENGTH_SHORT).show();
-                }) {
+        Log.d("SecondActivity", "Retrofit çağrısı gönderiliyor");
 
+        call.enqueue(new Callback<Void>() {
             @Override
-            public byte[] getBody() {
-                return jsonBody.toString().getBytes(StandardCharsets.UTF_8);
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                Log.d("SecondActivity", "Sunucu yanıtı: " + response);
+
+                if (response.isSuccessful()) {
+                    // Kayıt veya güncelleme işlemi başarılıysa:
+                    SharedPreferences preferences = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putString("id", userId);
+                    editor.apply();
+
+                    Toast.makeText(SecondActivity.this, "Bilgiler başarıyla güncellendi!", Toast.LENGTH_SHORT).show();
+                    // Profil ekranına geçiş yapılabilir
+                    Intent intent = new Intent(SecondActivity.this, ProfileActivity.class);
+                    intent.putExtra("id", userId);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    Log.e("SecondActivity", "Güncelleme başarısız. Kod: " + response.code());
+                    Toast.makeText(SecondActivity.this, "Güncelleme başarısız! Kod: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
-            public String getBodyContentType() {
-                return "application/json";
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("SecondActivity", "Retrofit HATA: " + t.getMessage());
+                Toast.makeText(SecondActivity.this, "Sunucu hatası: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
-
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("apikey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltZ3VheHBhZG5scHd4c25ldXdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjA1NDIwNywiZXhwIjoyMDYxNjMwMjA3fQ.JyznK6xm5vPW0I2egCRInJVkXKA4Izs4J7YpE9Nef-4");
-                headers.put("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltZ3VheHBhZG5scHd4c25ldXdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjA1NDIwNywiZXhwIjoyMDYxNjMwMjA3fQ.JyznK6xm5vPW0I2egCRInJVkXKA4Izs4J7YpE9Nef-4");
-                headers.put("Content-Type", "application/json");
-                headers.put("Prefer", "return=representation");
-                return headers;
-            }
-        };
-        Volley.newRequestQueue(this).add(request);
+        });
     }
 }
 

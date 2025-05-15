@@ -1,6 +1,8 @@
 package com.example.oturum_sayfasi;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,6 +27,58 @@ public class RegisterActivity extends AppCompatActivity {
         editTextPasswordRegister = findViewById(R.id.editTextPasswordRegister);
         buttonRegisterSubmit = findViewById(R.id.buttonRegisterSubmit);
 
+        // Başlangıçta +90 sabit olarak yerleştirilir
+        editTextUsernameRegister.setText("+90 ");
+        editTextUsernameRegister.setSelection(editTextUsernameRegister.getText().length());
+
+        editTextUsernameRegister.addTextChangedListener(new TextWatcher() {
+            boolean isFormatting;
+            int prevLength;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                prevLength = s.length();
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (isFormatting) return;
+
+                isFormatting = true;
+
+                String raw = s.toString();
+
+                // Eğer kullanıcı +90 silmeye çalıştıysa geri ekle
+                if (!raw.startsWith("+90")) {
+                    raw = "+90";
+                }
+
+                // Rakamları al (ilk 3 karakter olan +90 dışındakileri filtrele)
+                String digits = raw.replaceAll("[^\\d]", "");
+                if (digits.startsWith("90")) {
+                    digits = digits.substring(2); // +90'ı çıkar, sadece numara kalsın
+                }
+
+                // Format: 555 555 55 55
+                StringBuilder formatted = new StringBuilder("+90 ");
+                for (int i = 0; i < digits.length() && i < 10; i++) {
+                    formatted.append(digits.charAt(i));
+                    if (i == 2 || i == 5 || i == 7) {
+                        formatted.append(" ");
+                    }
+                }
+
+                // Yeni formatı ayarla
+                editTextUsernameRegister.setText(formatted.toString());
+                editTextUsernameRegister.setSelection(formatted.length());
+
+                isFormatting = false;
+            }
+        });
+
         buttonRegisterSubmit.setOnClickListener(view -> registerUser());
     }
 
@@ -34,6 +88,12 @@ public class RegisterActivity extends AppCompatActivity {
 
         if (username.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        //
+        if (!username.startsWith("+90") || username.length() != 17) {
+            Toast.makeText(this, "Telefon numarası +90 ile başlamalı ve 10 haneli olmalıdır", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -51,6 +111,8 @@ public class RegisterActivity extends AppCompatActivity {
                 } else {
                     Toast.makeText(RegisterActivity.this, "Kayıt başarısız. Tekrar deneyin.", Toast.LENGTH_SHORT).show();
                 }
+
+
             }
 
             @Override

@@ -100,9 +100,10 @@ public class UpdateInfoActivity extends AppCompatActivity {
         }
         return 0; // Erkek
     }
-    private void updateUserInfoOnSupabase(String username, String name, String surname, String gender, int day, int month, int year) {
 
-        String url = "https://imguaxpadnlpwxsneuwc.supabase.co/rest/v1/zsk_deneme?username=eq." + username;
+    private void updateUserInfoOnSupabase(String id, String name, String surname, String gender, int day, int month, int year) {
+        id = getIntent().getStringExtra("id"); // UUID olarak gelen id alınmalı
+        String url = "https://wutjjjjlbwpnwznbwcks.supabase.co/rest/v1/oturum?id=eq." + id;
 
         JSONObject jsonBody = new JSONObject();
         try {
@@ -112,36 +113,30 @@ public class UpdateInfoActivity extends AppCompatActivity {
             jsonBody.put("birthday", day);
             jsonBody.put("birthmonth", month);
             jsonBody.put("birthyear", year);
-            // Log ekleyelim: JSON verisini kontrol edelim
-            Log.d("UpdateInfoActivity", "JSON Body: " + jsonBody.toString());
-
         } catch (JSONException e) {
-            // JSON hatasını logla
             Log.e("UpdateInfoActivity", "JSON Exception: " + e.getMessage());
             e.printStackTrace();
         }
 
         StringRequest request = new StringRequest(Request.Method.PATCH, url,
                 response -> {
-                    Log.d("UpdateInfoActivity", "Güncelleme başarılı, sunucudan yanıt beklenmiyor.");
+                    Log.d("UpdateInfoActivity", "Güncelleme başarılı!");
                     Toast.makeText(this, "Güncelleme başarılı!", Toast.LENGTH_SHORT).show();
 
-                    // ProfileActivity'ye geri dön
-                    Intent intent = new Intent(UpdateInfoActivity.this, ProfileActivity.class);
-                    intent.putExtra("username", username);
-                    intent.putExtra("name", name);
-                    intent.putExtra("surname", surname);
-                    intent.putExtra("gender", gender);
-                    intent.putExtra("birthday", day);
-                    intent.putExtra("birthmonth", month);
-                    intent.putExtra("birthyear", year);
-                    startActivity(intent);
+                    // Activity'ye güncel verileri geri gönder
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("name", name);
+                    resultIntent.putExtra("surname", surname);
+                    resultIntent.putExtra("gender", gender);
+                    resultIntent.putExtra("birthday", day);
+                    resultIntent.putExtra("birthmonth", month);
+                    resultIntent.putExtra("birthyear", year);
+                    setResult(RESULT_OK, resultIntent);
                     finish();
                 },
                 error -> {
                     Log.e("Volley Error", "Error Message: " + error.getMessage());
                     if (error.networkResponse != null) {
-                        // Hata yanıtı varsa onu da logla
                         Log.e("Volley Error", "Error Response: " + new String(error.networkResponse.data));
                     }
                     Toast.makeText(this, "Güncelleme Hatası: " + error.getMessage(), Toast.LENGTH_SHORT).show();
@@ -150,20 +145,25 @@ public class UpdateInfoActivity extends AppCompatActivity {
             public byte[] getBody() {
                 return jsonBody.toString().getBytes(StandardCharsets.UTF_8);
             }
+
             @Override
             public String getBodyContentType() {
                 return "application/json";
             }
+
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
-                headers.put("apikey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltZ3VheHBhZG5scHd4c25ldXdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjA1NDIwNywiZXhwIjoyMDYxNjMwMjA3fQ.JyznK6xm5vPW0I2egCRInJVkXKA4Izs4J7YpE9Nef-4");
-                headers.put("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltZ3VheHBhZG5scHd4c25ldXdjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjA1NDIwNywiZXhwIjoyMDYxNjMwMjA3fQ.JyznK6xm5vPW0I2egCRInJVkXKA4Izs4J7YpE9Nef-4");
+                headers.put("apikey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1dGpqampsYndwbnd6bmJ3Y2tzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTM5Mzc0OCwiZXhwIjoyMDYwOTY5NzQ4fQ.FSzyUvY7tKV-kewlTy-84xQk7HpCqirdCelkymoUrMI"); // güvenlik için bir ENV dosyasında tutmanı öneririm
+                headers.put("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1dGpqampsYndwbnd6bmJ3Y2tzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTM5Mzc0OCwiZXhwIjoyMDYwOTY5NzQ4fQ.FSzyUvY7tKV-kewlTy-84xQk7HpCqirdCelkymoUrMI");
                 headers.put("Content-Type", "application/json");
                 headers.put("Prefer", "return=representation");
                 return headers;
             }
         };
+
         Volley.newRequestQueue(this).add(request);
     }
+
+
 }
